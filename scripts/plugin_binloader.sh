@@ -102,12 +102,19 @@ getDownloadURLs() {
 
   echo "Retrieving $latest_url"
 
+
+  if [ -z "$GITHUB_TOKEN" ]; then
+    echo "GITHUB_TOKEN must defined to avoid api rates limits"
+
+    exit 1
+  fi
+
   if [ $DOWNLOADER = 'curl' ]; then
-    DOWNLOAD_URL=$(curl -sL "$latest_url" | grep "$OS-$ARCH" | awk '/"browser_download_url":/{gsub(/[,"]/,"", $2); print $2}' 2>/dev/null)
-    PROJECT_CHECKSUM=$(curl -sL "$latest_url" | grep "$PROJECT_CHECKSUM_FILE" | awk '/"browser_download_url":/{gsub(/[,"]/,"", $2); print $2}' 2>/dev/null)
+    DOWNLOAD_URL=$(curl -sL -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" "$latest_url" | grep "$OS-$ARCH" | awk '/"browser_download_url":/{gsub(/[,"]/,"", $2); print $2}' 2>/dev/null)
+    PROJECT_CHECKSUM=$(curl -sL -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" "$latest_url" | grep "$PROJECT_CHECKSUM_FILE" | awk '/"browser_download_url":/{gsub(/[,"]/,"", $2); print $2}' 2>/dev/null)
   elif [ $DOWNLOADER = 'wget' ]; then
-    DOWNLOAD_URL=$(wget -q -O - "$latest_url" | grep "$OS-$ARCH" | awk '/"browser_download_url":/{gsub(/[,"]/,"", $2); print $2}' 2>/dev/null)
-    PROJECT_CHECKSUM=$(wget -q -O - "$latest_url" | grep "$PROJECT_CHECKSUM_FILE" | awk '/"browser_download_url":/{gsub(/[,"]/,"", $2); print $2}' 2>/dev/null)
+    DOWNLOAD_URL=$(wget -q --header "Accept: application/vnd.github+json" --header "Authorization: Bearer $GITHUB_TOKEN" -O - "$latest_url" | grep "$OS-$ARCH" | awk '/"browser_download_url":/{gsub(/[,"]/,"", $2); print $2}' 2>/dev/null)
+    PROJECT_CHECKSUM=$(wget -q --header "Accept: application/vnd.github+json" --header "Authorization: Bearer $GITHUB_TOKEN" -O - "$latest_url" | grep "$PROJECT_CHECKSUM_FILE" | awk '/"browser_download_url":/{gsub(/[,"]/,"", $2); print $2}' 2>/dev/null)
   fi
 
   if [ -z "$DOWNLOAD_URL" ]; then
